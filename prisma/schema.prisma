@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    String @id @default(uuid())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  isActive     Boolean   @default(true)
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  cart         Cart?
+  orders       Order[]
+  wishlist     Wishlist?
+  sentMessages     Message[] @relation("MessageSender")
+  receivedMessages  Message[] @relation("MessageRecipient")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  @@index([email])
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+}
+
+model Platform {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Region {
+  id       String    @id @default(uuid())
+  code     String    @unique
+  name     String
+  products Product[]
+}
+
+model Product {
+  id           String         @id @default(uuid())
+  name         String
+  slug         String         @unique
+  description  String
+  price        Decimal        @db.Decimal(10, 2)
+  comparePrice Decimal?       @db.Decimal(10, 2)
+  stock        Int            @default(0)
+  isActive     Boolean        @default(true)
+  isFeatured   Boolean        @default(false)
+  rating       Int            @default(0)
+  categoryId   String
+  platformId   String?
+  regionId     String?
+  imageUrl     String?
+  category     Category       @relation(fields: [categoryId], references: [id])
+  platform     Platform?      @relation(fields: [platformId], references: [id])
+  region       Region?        @relation(fields: [regionId], references: [id])
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  wishlistItems WishlistItem[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int     @default(1)
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id           String        @id @default(uuid())
+  orderNumber  String        @unique
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  status       String        @default("PENDING")
+  subtotal     Decimal       @db.Decimal(10, 2)
+  discount     Decimal       @default(0) @db.Decimal(10, 2)
+  total        Decimal       @db.Decimal(10, 2)
+  couponCode   String?
+  items        OrderItem[]
+  payments     Payment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  @@index([userId])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider    String
+  providerRef String?
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   @default("PENDING")
+  rawPayload  Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  type      String
+  value     Decimal  @db.Decimal(10, 2)
+  minSpend  Decimal? @db.Decimal(10, 2)
+  maxUses   Int?
+  usedCount Int      @default(0)
+  isActive  Boolean  @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  recipientId String
+  orderId     String?
+  body        String
+  createdAt   DateTime @default(now())
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User     @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([orderId])
+}
+
+model Wishlist {
+  id     String         @id @default(uuid())
+  userId String         @unique
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  productId  String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+  @@unique([wishlistId, productId])
+}
