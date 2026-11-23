@@ -25,10 +25,11 @@ function errorHandler(err, req, res, next) {
 
   const status = err.status || 500;
   const message = status >= 500
-    ? (process.env.NODE_ENV === 'production'
-      ? 'An internal server error occurred. Please try again.'
-      : (err.message || 'An internal server error occurred.'))
+    ? (err.message || 'An internal server error occurred.')
     : (err.message || 'Request failed');
-  res.status(status).json({ error: message });
+  res.status(status).json({
+    error: message,
+    ...(err.code ? { code: err.code } : {}),
+  });
 }
 module.exports = errorHandler;
