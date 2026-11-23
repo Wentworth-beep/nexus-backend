@@ -1,11 +1,11 @@
 // LAYER: Controller — HTTP boundary, uses req/res, calls authService
 const authService = require('../services/authService');
-const { nodeEnv } = require('../config/environment');
 
+// MUST be 'none' and 'true' for cross-domain (Vercel -> Render) cookies to work
 const COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: nodeEnv === 'production',
+  sameSite: 'none',
+  secure: true, 
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
@@ -28,7 +28,8 @@ exports.login = async (req, res, next) => {
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: nodeEnv === 'production' });
+  // Must match the exact same options to clear it properly
+  res.clearCookie('token', { httpOnly: true, sameSite: 'none', secure: true });
   res.json({ ok: true });
 };
 
