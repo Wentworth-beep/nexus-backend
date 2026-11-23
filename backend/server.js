@@ -9,6 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 const prisma = require('./config/database');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // --- Security & Middleware ---
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -29,7 +30,17 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health',
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'Too many requests. Please wait before trying again.',
+    }),
+});
 app.use('/api/', limiter);
 
 // --- Static Files ---
