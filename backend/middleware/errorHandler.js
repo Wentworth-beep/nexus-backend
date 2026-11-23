@@ -3,6 +3,13 @@ function errorHandler(err, req, res, next) {
     console.error(`[${req.method} ${req.originalUrl}]`, err);
   }
 
+  if (err instanceof require('multer').MulterError) {
+    return res.status(400).json({ error: err.message, code: err.code });
+  }
+  if (err.message === 'Only JPEG, PNG, or WebP allowed') {
+    return res.status(400).json({ error: err.message });
+  }
+
   if (err.code === 'P2002') {
     return res.status(409).json({ error: 'Duplicate value' });
   }
@@ -18,7 +25,9 @@ function errorHandler(err, req, res, next) {
 
   const status = err.status || 500;
   const message = status >= 500
-    ? 'An internal server error occurred. Please try again.'
+    ? (process.env.NODE_ENV === 'production'
+      ? 'An internal server error occurred. Please try again.'
+      : (err.message || 'An internal server error occurred.'))
     : (err.message || 'Request failed');
   res.status(status).json({ error: message });
 }
