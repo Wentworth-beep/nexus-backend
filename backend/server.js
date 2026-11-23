@@ -10,6 +10,8 @@ const prisma = require('./config/database');
 
 const app = express();
 
+// If you haven't set CLIENT_URL on Render yet, it defaults to localhost.
+// Make sure to set CLIENT_URL=https://nexusgaming-azure.vercel.app on Render!
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
@@ -19,19 +21,12 @@ app.use(cookieParser());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
 app.use('/api/', limiter);
 
-// Static
+// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-app.use((req, res, next) => {
-  if (req.path.endsWith('.html') || req.path.endsWith('.js')) {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  }
-  next();
-});
-
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/products', require('./routes/product'));
+app.use('/api/products', require('./routes/products')); // Make sure this is plural!
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/cart', require('./routes/cart'));
 app.use('/api/orders', require('./routes/orders'));
@@ -50,14 +45,11 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// SPA fallback for non-API routes
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
-});
+// THE FALLBACK TO FRONTEND HAS BEEN REMOVED. 
+// Backend now only serves API and files.
 
 app.use(errorHandler);
 
 app.listen(env.port, () => {
-  console.log(`🚀 Server running on http://localhost:${env.port}`);
+  console.log(` Server running on http://localhost:${env.port}`);
 });
