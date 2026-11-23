@@ -5,6 +5,11 @@ const upload = require('../middleware/upload');
 
 const router = express.Router();
 
+function safeImageUrl(product) {
+  if (!product?.imageUrl || product.imageUrl.startsWith('/uploads/')) return null;
+  return product.imageUrl;
+}
+
 router.get('/', async (req, res, next) => {
   try {
     const { q, category, platform, region, sort, featured, page = 1, limit = 12 } = req.query;
@@ -34,7 +39,12 @@ router.get('/', async (req, res, next) => {
       prisma.product.count({ where }),
     ]);
 
-    res.json({ items, total, page: Number(page), limit: Number(limit) });
+    res.json({
+      items: items.map((item) => ({ ...item, imageUrl: safeImageUrl(item) })),
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    });
   } catch (err) {
     next(Object.assign(
       new Error(err.code ? `${err.code}: ${err.message || 'Product could not be updated'}` : (err.message || 'Product could not be updated')),
@@ -60,7 +70,10 @@ router.get('/:id', async (req, res, next) => {
       take: 4,
     });
 
-    res.json({ product, related });
+    res.json({
+      product: { ...product, imageUrl: safeImageUrl(product) },
+      related: related.map((item) => ({ ...item, imageUrl: safeImageUrl(item) })),
+    });
   } catch (err) {
     next(err);
   }

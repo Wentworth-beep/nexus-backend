@@ -116,7 +116,10 @@ router.get('/products', async (req, res, next) => {
       include: { category: true, platform: true },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(products);
+    res.json(products.map((product) => ({
+      ...product,
+      imageUrl: product.imageUrl?.startsWith('/uploads/') ? null : product.imageUrl,
+    })));
   } catch (err) { next(err); }
 });
 
