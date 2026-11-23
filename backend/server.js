@@ -27,7 +27,7 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
