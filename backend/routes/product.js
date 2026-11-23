@@ -36,7 +36,10 @@ router.get('/', async (req, res, next) => {
 
     res.json({ items, total, page: Number(page), limit: Number(limit) });
   } catch (err) {
-    next(err);
+    next(Object.assign(
+      new Error(err.code ? `${err.code}: ${err.message || 'Product could not be updated'}` : (err.message || 'Product could not be updated')),
+      { status: err.status || 500, code: err.code },
+    ));
   }
 });
 
@@ -90,7 +93,10 @@ router.post('/', authenticate, requireAdmin, upload.single('image'), async (req,
     });
     res.status(201).json(product);
   } catch (err) {
-    next(err);
+    next(Object.assign(
+      new Error(err.code ? `${err.code}: ${err.message || 'Product could not be created'}` : (err.message || 'Product could not be created')),
+      { status: err.status || 500, code: err.code },
+    ));
   }
 });
 
