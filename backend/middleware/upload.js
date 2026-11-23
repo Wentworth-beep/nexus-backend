@@ -1,20 +1,4 @@
 const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
-const fs = require('fs');
-
-const uploadDirectory = path.join(__dirname, '..', '..', 'uploads');
-fs.mkdirSync(uploadDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDirectory),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const name = crypto.randomBytes(16).toString('hex');
-    cb(null, `${name}${ext}`);
-  },
-});
-
 function fileFilter(_req, file, cb) {
   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowed.includes(file.mimetype)) {
@@ -24,7 +8,7 @@ function fileFilter(_req, file, cb) {
 }
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });

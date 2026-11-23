@@ -83,7 +83,9 @@ router.post('/', authenticate, requireAdmin, upload.single('image'), async (req,
         categoryId,
         platformId: platformId || null,
         regionId: regionId || null,
-        imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+        imageUrl: req.file
+          ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+          : null,
       },
     });
     res.status(201).json(product);
@@ -107,7 +109,9 @@ router.put('/:id', authenticate, requireAdmin, upload.single('image'), async (re
       data.rating = Math.min(5, Math.max(0, Number(data.rating) || 0));
     }
     if (data.isFeatured !== undefined) data.isFeatured = data.isFeatured === 'true';
-    if (req.file) data.imageUrl = `/uploads/${req.file.filename}`;
+    if (req.file) {
+      data.imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
     const product = await prisma.product.update({
       where: { id: req.params.id },
       data,
