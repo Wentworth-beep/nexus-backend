@@ -10,10 +10,20 @@ const prisma = require('./config/database');
 
 const app = express();
 
-// If you haven't set CLIENT_URL on Render yet, it defaults to localhost.
-// Make sure to set CLIENT_URL=https://nexusgaming-azure.vercel.app on Render!
+// --- Security & Middleware ---
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: env.clientUrl, credentials: true }));
+
+// Allow requests from your local machine AND your deployed Vercel frontend(s)
+app.use(cors({ 
+  origin: [
+    'http://localhost:5000', 
+    'http://localhost:3000',
+    'https://nexusgaming-azure.vercel.app', 
+    'https://nexusgaming-n264bctww-wentworth-beeps-projects.vercel.app'
+  ], 
+  credentials: true 
+}));
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -21,12 +31,13 @@ app.use(cookieParser());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
 app.use('/api/', limiter);
 
+// --- Static Files ---
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Routes
+// --- API Routes ---
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/products', require('./routes/product')); // Make sure this is plural!
+app.use('/api/products', require('./routes/product')); 
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/cart', require('./routes/cart'));
 app.use('/api/orders', require('./routes/orders'));
@@ -36,6 +47,7 @@ app.use('/api/coupons', require('./routes/coupons'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/messages', require('./routes/messages'));
 
+// --- Health Check ---
 app.get('/api/health', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -45,11 +57,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// THE FALLBACK TO FRONTEND HAS BEEN REMOVED. 
-// Backend now only serves API and files.
-
+// --- Error Handling ---
 app.use(errorHandler);
 
+// --- Start Server ---
 app.listen(env.port, () => {
-  console.log(` Server running on http://localhost:${env.port}`);
+  console.log(`🚀 Server running on port ${env.port}`);
 });
