@@ -13,14 +13,15 @@ const app = express();
 // --- Security & Middleware ---
 app.use(helmet({ contentSecurityPolicy: false }));
 
-// Allow requests from your local machine AND your deployed Vercel frontend(s)
+// Allow requests from localhost and ANY Vercel deployment
 app.use(cors({ 
-  origin: [
-    'http://localhost:5000', 
-    'http://localhost:3000',
-    'https://nexusgaming-azure.vercel.app', 
-    'https://nexusgaming-n264bctww-wentworth-beeps-projects.vercel.app'
-  ], 
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow Postman/curl
+    if (origin.includes('localhost') || origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true 
 }));
 
@@ -32,7 +33,6 @@ const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
 app.use('/api/', limiter);
 
 // --- Static Files ---
-// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // --- API Routes ---
