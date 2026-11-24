@@ -32,7 +32,7 @@ app.use(cookieParser());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 3000,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path === '/health',

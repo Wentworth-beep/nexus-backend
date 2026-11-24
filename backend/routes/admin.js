@@ -113,6 +113,7 @@ router.get('/orders', async (req, res, next) => {
 router.get('/products', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
+      where: { isActive: true },
       include: { category: true, platform: true },
       orderBy: { createdAt: 'desc' },
     });

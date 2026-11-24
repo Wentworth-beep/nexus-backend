@@ -63,7 +63,9 @@ router.get('/:id', async (req, res, next) => {
         region: true,
       },
     });
-    if (!product) return res.status(404).json({ error: 'Not found' });
+    if (!product || !product.isActive) {
+      return res.status(404).json({ error: 'Not found' });
+    }
 
     const related = await prisma.product.findMany({
       where: { categoryId: product.categoryId, id: { not: product.id }, isActive: true },
@@ -143,8 +145,31 @@ router.put('/:id', authenticate, requireAdmin, upload.single('image'), async (re
 
 router.delete('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    await prisma.product.update({ where: { id: req.params.id }, data: { isActive: false } });
-    res.json({ ok: true });
+    const outcome = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({ where: { id: req.params.id } });
+      if (!product) {
+        throw Object.assign(new Error('Product not found'), { status: 404 });
+      }
+
+      const hasOrderHistory = await tx.orderItem.count({
+        where: { productId: product.id },
+      });
+
+      await tx.cartItem.deleteMany({ where: { productId: product.id } });
+      await tx.wishlistItem.deleteMany({ where: { productId: product.id } });
+
+      if (hasOrderHistory) {
+        await tx.product.update({
+          where: { id: product.id },
+          data: { isActive: false },
+        });
+        return { archived: true };
+      } else {
+        await tx.product.delete({ where: { id: product.id } });
+        return { archived: false };
+      }
+    });
+    res.json({ ok: true, ...outcome });
   } catch (err) {
     next(err);
   }
